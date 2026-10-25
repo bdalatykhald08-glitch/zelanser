@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:13
+    container_name: zelanser_db
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:6
+    container_name: zelanser_redis
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    container_name: zelanser_web
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+
+    environment:
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL='redis://redis:6379/0'
+      - CELERY_RESULT_BACKEND='redis://redis:6379/0'
+
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:
+  redis_data:
